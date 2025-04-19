@@ -2552,6 +2552,7 @@ dependencies = [
  "ethereum-light-client-types",
  "ibc-union-spec",
  "serde",
+ "tendermint-light-client-types",
  "unionlabs",
 ]
 
