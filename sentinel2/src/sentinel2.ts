@@ -29,13 +29,11 @@ import { hideBin } from "yargs/helpers"
 import fs from "node:fs"
 import type { Address } from "viem"
 import { request, gql } from "graphql-request"
-// import Database from 'better-sqlite3';
+import Database from 'better-sqlite3';
 import fetch from "node-fetch";
 
 /**
  * Effect to trigger a BetterStack incident via the Uptime API
- * Make sure you use an *Uptime* API token (not a Logtail/Telemetry token) in UPTIME_API_TOKEN.
- * Pass in your requester email and, if using a global token, the team name.
  */
 export const triggerIncident = (
   summary: string,
@@ -79,7 +77,7 @@ export const triggerIncident = (
 export const resolveIncident = (
   incidentId: string,
   apiKey: string,
-  resolvedBy: string = "automation@example.com"
+  resolvedBy: string = "sentinel"
 ) =>
   Effect.tryPromise({
     try: () =>
@@ -103,22 +101,22 @@ export const resolveIncident = (
     catch: e => new Error(`Incident resolve error: ${e}`),
   });
 
-// const db = new Database("funded-txs.db");
-// // ensure the table exists
-// db.prepare(`
-//   CREATE TABLE IF NOT EXISTS funded_txs (
-//     transaction_hash TEXT PRIMARY KEY
-//   )
-// `).run();
+const db = new Database("/root/funded-txs.db");
+// ensure the table exists
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS funded_txs (
+    transaction_hash TEXT PRIMARY KEY
+  )
+`).run();
 
-// console.info("db is:", db);
-// // prepared statements for quick lookup and insert
-// const isFundedStmt = db.prepare(
-//   `SELECT 1 FROM funded_txs WHERE transaction_hash = ?`
-// );
-// const insertFundedStmt = db.prepare(
-//   `INSERT OR IGNORE INTO funded_txs (transaction_hash) VALUES (?)`
-// );
+console.info("db is:", db);
+// prepared statements for quick lookup and insert
+const isFundedStmt = db.prepare(
+  `SELECT 1 FROM funded_txs WHERE transaction_hash = ?`
+);
+const insertFundedStmt = db.prepare(
+  `INSERT OR IGNORE INTO funded_txs (transaction_hash) VALUES (?)`
+);
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
