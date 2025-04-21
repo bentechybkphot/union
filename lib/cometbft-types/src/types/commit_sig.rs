@@ -29,7 +29,8 @@ pub enum CommitSig {
 }
 
 /// Raw CommitSig struct, able to represent all possible CometBFT-compatible commit sigs.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct CommitSigRaw {
     pub block_id_flag: i32,
     pub validator_address: Bytes<HexUnprefixed>,
@@ -40,8 +41,6 @@ pub struct CommitSigRaw {
     pub timestamp: Option<Timestamp>,
     pub signature: Option<Bytes<Base64>>,
 }
-
-pub trait CommitSigT = TryFrom<CommitSigRaw, Error: core::error::Error> + Into<CommitSigRaw>;
 
 impl From<CommitSig> for CommitSigRaw {
     fn from(value: CommitSig) -> Self {

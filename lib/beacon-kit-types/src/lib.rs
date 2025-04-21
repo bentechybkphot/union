@@ -12,6 +12,9 @@ use unionlabs::{
 #[cfg_attr(feature = "proto", derive(prost::Enumeration))]
 #[repr(i32)]
 pub enum BlockIdFlag {
+    Absent = 1,
+    Commit = 2,
+    Nil = 3,
     /// Aggregated commit
     /// Voted for the block and contains aggregated signature.
     AggCommit = 4,
@@ -27,6 +30,9 @@ pub enum BlockIdFlag {
 impl BlockIdFlag {
     fn try_from_i32(value: i32) -> Result<Self, UnknownEnumVariant<i32>> {
         match value {
+            1 => Ok(Self::Absent),
+            2 => Ok(Self::Commit),
+            3 => Ok(Self::Nil),
             4 => Ok(Self::AggCommit),
             5 => Ok(Self::AggCommitAbsent),
             6 => Ok(Self::AggNil),
@@ -45,6 +51,19 @@ impl BlockIdFlag {
 )]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum CommitSig {
+    // standard cometbft commit sig
+    Absent,
+    Commit {
+        validator_address: H160,
+        timestamp: Timestamp,
+        signature: Bytes,
+    },
+    Nil {
+        validator_address: H160,
+        timestamp: Timestamp,
+        signature: Bytes,
+    },
+    // beacon-kit specific commit sig
     AggCommit {
         validator_address: H160,
         signature: Bytes,
@@ -64,6 +83,32 @@ pub enum CommitSig {
 impl From<CommitSig> for CommitSigRaw {
     fn from(value: CommitSig) -> Self {
         match value {
+            CommitSig::Absent => Self {
+                block_id_flag: BlockIdFlag::Absent.into(),
+                validator_address: Bytes::new(&[]),
+                timestamp: None,
+                signature: None,
+            },
+            CommitSig::Commit {
+                validator_address,
+                timestamp,
+                signature,
+            } => Self {
+                block_id_flag: BlockIdFlag::Commit.into(),
+                validator_address: validator_address.into_bytes().into_encoding(),
+                timestamp: Some(timestamp),
+                signature: Some(signature.into_encoding()),
+            },
+            CommitSig::Nil {
+                validator_address,
+                timestamp,
+                signature,
+            } => Self {
+                block_id_flag: BlockIdFlag::Nil.into(),
+                validator_address: validator_address.into_bytes().into_encoding(),
+                timestamp: Some(timestamp),
+                signature: Some(signature.into_encoding()),
+            },
             CommitSig::AggCommit {
                 validator_address,
                 signature,
@@ -105,6 +150,33 @@ impl TryFrom<CommitSigRaw> for CommitSig {
         let block_id_flag = BlockIdFlag::try_from_i32(value.block_id_flag)?;
 
         match block_id_flag {
+            BlockIdFlag::Absent => {
+                if !value.validator_address.is_empty() {
+                    Err(Error::AbsentWithValidatorAddress)
+                } else if value.timestamp.is_some_and(|ts| ts != Timestamp::default()) {
+                    Err(Error::AbsentWithTimestamp)
+                } else if !value.signature.unwrap_or_default().is_empty() {
+                    Err(Error::AbsentWithSignature)
+                } else {
+                    Ok(Self::Absent)
+                }
+            }
+            BlockIdFlag::Commit => Ok(Self::Commit {
+                validator_address: value.validator_address.try_into()?,
+                timestamp: value.timestamp.ok_or(Error::CommitMissingTimestamp)?,
+                signature: value
+                    .signature
+                    .ok_or(Error::CommitMissingSignature)?
+                    .into_encoding(),
+            }),
+            BlockIdFlag::Nil => Ok(Self::Nil {
+                validator_address: value.validator_address.try_into()?,
+                timestamp: value.timestamp.ok_or(Error::NilMissingTimestamp)?,
+                signature: value
+                    .signature
+                    .ok_or(Error::NilMissingSignature)?
+                    .into_encoding(),
+            }),
             BlockIdFlag::AggCommit => Ok(Self::AggCommit {
                 validator_address: value.validator_address.try_into()?,
                 signature: value

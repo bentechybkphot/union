@@ -4,9 +4,9 @@ use crate::types::{commit::Commit, commit_sig::CommitSig, header::Header};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
-pub struct SignedHeader<Cs = CommitSig> {
+pub struct SignedHeader {
     pub header: Header,
-    pub commit: Commit<Cs>,
+    pub commit: Commit<CommitSigRaw>,
 }
 
 #[cfg(feature = "proto")]

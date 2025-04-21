@@ -1,19 +1,22 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::bounded::{BoundedI32, BoundedI64};
 
-use crate::types::{block_id::BlockId, commit_sig::CommitSig};
+use crate::types::{
+    block_id::BlockId,
+    commit_sig::{CommitSig, CommitSigRaw},
+};
 
 /// Commit of a block for a CometBFT chain.
 ///
 /// This is generic over the underlying `CommitSig`, to allow for threading commit sigs of chains that have deviated from CometBFT (eg. berachain). It defaults to the standard [`CommitSig`].
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
-pub struct Commit<Cs = CommitSig> {
+pub struct Commit {
     #[serde(with = "::serde_utils::string")]
     pub height: BoundedI64<0, { i64::MAX }>,
     pub round: BoundedI32<0, { i32::MAX }>,
     pub block_id: BlockId,
-    pub signatures: Vec<Cs>,
+    pub signatures: Vec<CommitSigRaw>,
 }
 
 #[cfg(feature = "proto")]

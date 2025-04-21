@@ -5,8 +5,8 @@ use crate::types::{
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct LightBlock<Cs = CommitSig> {
-    pub signed_header: SignedHeader<Cs>,
+pub struct LightBlock {
+    pub signed_header: SignedHeader,
     pub validator_set: ValidatorSet,
 }
 

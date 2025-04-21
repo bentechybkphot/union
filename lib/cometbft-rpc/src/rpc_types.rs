@@ -163,8 +163,8 @@ pub struct GrpcAbciQueryError {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct CommitResponse<Cs = CommitSig> {
-    pub signed_header: SignedHeader<Cs>,
+pub struct CommitResponse {
+    pub signed_header: SignedHeader,
     pub canonical: bool,
 }
 
